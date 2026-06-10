@@ -7,19 +7,6 @@ const CH = 1280;
 
 // ── Canvas drawing helpers ────────────────────────────────────────────────────
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lineH: number) {
   const words = text.split(" ");
@@ -43,53 +30,50 @@ function drawFrame(ctx: CanvasRenderingContext2D, video: HTMLVideoElement) {
   ctx.drawImage(video, sx, sy, sw, sh, 0, 0, CW, CH);
 }
 
-function drawCard(ctx: CanvasRenderingContext2D, title: string) {
-  const cw = 620, cx = (CW - cw) / 2;
-  ctx.font = "bold 26px Arial";
-  const titleW = cw - 48;
-  let lines = 0, line = "";
-  for (const w of title.split(" ")) {
-    const t = line ? line + " " + w : w;
-    if (ctx.measureText(t).width > titleW && line) { lines++; line = w; } else line = t;
-  }
-  if (line) lines++;
-  const ch = 150 + lines * 34 + 56;
-  const cy = CH / 2 - ch / 2 - 40;
+function drawCard(ctx: CanvasRenderingContext2D, title: string, img: HTMLImageElement) {
+  if (!img.complete || !img.naturalWidth) return;
+
+  // Draw the transparent card PNG — gameplay shows through where there's no card
+  const iw = 660;
+  const ih = Math.round(iw * (img.naturalHeight / img.naturalWidth));
+  const ix = (CW - iw) / 2;
+  const iy = CH / 2 - ih / 2 - 30;
 
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 28; ctx.shadowOffsetY = 10;
-  ctx.fillStyle = "#FFFFFF";
-  roundRect(ctx, cx, cy, cw, ch, 18); ctx.fill();
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 22;
+  ctx.drawImage(img, ix, iy, iw, ih);
   ctx.restore();
 
-  // Orange circle
-  ctx.fillStyle = "#FF4500";
-  ctx.beginPath(); ctx.arc(cx + 42, cy + 54, 24, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#FFF"; ctx.font = "bold 17px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("r/", cx + 42, cy + 54);
+  // Overlay the post title in the card's content area.
+  // The white card occupies roughly 22%–77% of the image height;
+  // within that, the header row is ~33% and footer ~30%.
+  const cardTop = iy + ih * 0.22;
+  const cardH   = ih * 0.55;
+  const titleAreaTop = cardTop + cardH * 0.35;
+  const titleAreaH   = cardH  * 0.36;
+  const titleX = ix + 60;
+  const titleW = iw - 120;
 
-  // r/BlankVex + checkmark
-  ctx.fillStyle = "#000"; ctx.font = "bold 21px Arial"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ctx.fillText("r/BlankVex", cx + 76, cy + 50);
-  ctx.fillStyle = "#0079D3"; ctx.font = "bold 18px Arial";
-  ctx.fillText("✓", cx + 76 + ctx.measureText("r/BlankVex").width + 7, cy + 50);
-
-  // Meta
-  ctx.fillStyle = "#888"; ctx.font = "15px Arial";
-  ctx.fillText("Posted by u/BlankVex_AI  ·  2h ago", cx + 76, cy + 74);
-
-  // Title
-  ctx.fillStyle = "#1a1a1b"; ctx.font = "bold 26px Arial";
-  wrapText(ctx, title, cx + 24, cy + 116, titleW, 34);
-
-  // Action pills
-  const by = cy + ch - 48;
-  for (const [bx, label] of [[cx + 20, "▲  99+"], [cx + 126, "✦  99+"]] as [number, string][]) {
-    ctx.fillStyle = "#F6F7F8"; roundRect(ctx, bx, by, 96, 34, 17); ctx.fill();
-    ctx.fillStyle = "#444"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center";
-    ctx.fillText(label, bx + 48, by + 22);
+  // Auto-size font so it never overflows the title area
+  let fontSize = 28;
+  ctx.font = `bold ${fontSize}px Arial`;
+  while (fontSize > 13) {
+    const lh = fontSize * 1.35;
+    let lines = 1, ln = "";
+    for (const w of title.split(" ")) {
+      const t = ln ? ln + " " + w : w;
+      if (ctx.measureText(t).width > titleW && ln) { lines++; ln = w; } else ln = t;
+    }
+    if (lines * lh <= titleAreaH) break;
+    fontSize -= 2;
+    ctx.font = `bold ${fontSize}px Arial`;
   }
-  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+
+  ctx.fillStyle = "#1a1a1b";
+  ctx.textBaseline = "top";
+  wrapText(ctx, title, titleX, titleAreaTop, titleW, fontSize * 1.35);
+  ctx.textBaseline = "alphabetic";
 }
 
 function drawCaptions(ctx: CanvasRenderingContext2D, words: string[], activeIdx: number) {
@@ -175,6 +159,15 @@ export function VideoRecorder({ title, story, gameplayFile, onBack }: VideoRecor
     setStatusMsg("Generating voice…");
 
     try {
+      // 0. Pre-load the Reddit card image
+      const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
+      const cardImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Card image failed to load"));
+        img.src = `${base}/reddit-card-transparent.png`;
+      });
+
       // 1. Create AudioContext and decode TTS (backend chunks long text automatically)
       const audioCtx = new AudioContext();
       await audioCtx.resume(); // browsers suspend AudioContext until a user-gesture; resume before scheduling
@@ -246,7 +239,7 @@ export function VideoRecorder({ title, story, gameplayFile, onBack }: VideoRecor
         ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(0, 0, CW, CH);
 
         if (elapsed < 5) {
-          drawCard(ctx, title);
+          drawCard(ctx, title, cardImg);
         } else if (elapsed < totalDuration) {
           const wIdx = Math.min(
             Math.floor(((elapsed - 5) / ttsDuration) * storyWords.length),
