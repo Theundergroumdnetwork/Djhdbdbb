@@ -167,6 +167,7 @@ export function VideoRecorder({ title, story, gameplayFile, onBack }: VideoRecor
     try {
       // 1. Create AudioContext and decode TTS (backend chunks long text automatically)
       const audioCtx = new AudioContext();
+      await audioCtx.resume(); // browsers suspend AudioContext until a user-gesture; resume before scheduling
       const ttsBuffer = await fetchAudioBuffer(story, audioCtx);
       const ttsDuration = ttsBuffer.duration;
       const totalDuration = 5 + ttsDuration;
