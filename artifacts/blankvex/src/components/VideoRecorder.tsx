@@ -98,7 +98,16 @@ function drawCaptions(ctx: CanvasRenderingContext2D, words: string[], activeIdx:
   const end = Math.min(words.length - 1, start + 3);
   const chunk = words.slice(start, end + 1);
 
-  ctx.font = "bold 64px Arial"; ctx.textBaseline = "middle";
+  const maxW = CW - 56; // 28px padding each side
+  let fontSize = 64;
+  ctx.font = `bold ${fontSize}px Arial`;
+  // Scale font down until all words fit on one line
+  while (ctx.measureText(chunk.join(" ")).width > maxW && fontSize > 28) {
+    fontSize -= 4;
+    ctx.font = `bold ${fontSize}px Arial`;
+  }
+
+  ctx.textBaseline = "middle";
   const totalW = ctx.measureText(chunk.join(" ")).width;
   let x = (CW - totalW) / 2;
   const y = CH * 0.76;
@@ -150,6 +159,7 @@ export function VideoRecorder({ title, story, gameplayFile, onBack }: VideoRecor
   const [progress, setProgress] = useState(0);
   const [statusMsg, setStatusMsg] = useState("Generating voice…");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadExt, setDownloadExt] = useState<string>("mp4");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -200,9 +210,13 @@ export function VideoRecorder({ title, story, gameplayFile, onBack }: VideoRecor
         ...dest.stream.getAudioTracks(),
       ]);
       const mimeType = (
+        MediaRecorder.isTypeSupported("video/mp4;codecs=avc1") ? "video/mp4;codecs=avc1" :
+        MediaRecorder.isTypeSupported("video/mp4") ? "video/mp4" :
         MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" :
-        MediaRecorder.isTypeSupported("video/webm") ? "video/webm" : "video/mp4"
+        "video/webm"
       );
+      const ext = mimeType.startsWith("video/mp4") ? "mp4" : "webm";
+      setDownloadExt(ext);
       const recorder = new MediaRecorder(combined, { mimeType });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
@@ -308,7 +322,7 @@ export function VideoRecorder({ title, story, gameplayFile, onBack }: VideoRecor
 
       {/* Download */}
       {phase === "done" && downloadUrl && (
-        <a href={downloadUrl} download="blankvex-video.webm" className="w-full max-w-[360px]">
+        <a href={downloadUrl} download={`blankvex-video.${downloadExt}`} className="w-full max-w-[360px]">
           <Button size="lg" className="w-full h-14 text-lg font-bold bg-[#FF4500] hover:bg-[#E03D00] text-white shadow-lg" data-testid="button-download">
             <Download className="w-5 h-5 mr-2" /> Download Video
           </Button>
