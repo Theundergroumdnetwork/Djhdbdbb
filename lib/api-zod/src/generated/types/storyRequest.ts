@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface StoryRequest {
   /** Story category (e.g. AITA, relationship drama, etc.) */
@@ -18,15 +15,3 @@ export interface StoryRequest {
      */
   customTitle?: string | null;
 }
-
-export interface StoryResponse {
-  /** Reddit post title */
-  title: string;
-  /** Full story text for narration */
-  story: string;
-}
-
-export interface ErrorResponse {
-  error: string;
-}
-

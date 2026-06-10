@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "BlankVex Studio"
+version = "1.0.0"
+id = "artifacts/blankvex"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21402
+
+[services.development]
+run = "pnpm --filter @workspace/blankvex run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/blankvex", "run", "build" ]
+publicDir = "artifacts/blankvex/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21402"
+BASE_PATH = "/"

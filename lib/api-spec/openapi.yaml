@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: story
+    description: Reddit story generation
 paths:
   /healthz:
     get:
@@ -24,6 +26,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /story/generate:
+    post:
+      operationId: generateStory
+      tags: [story]
+      summary: Generate a Reddit-style story
+      description: Uses OpenRouter AI to generate a Reddit-style AITA or drama story
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoryRequest"
+      responses:
+        "200":
+          description: Generated story
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoryResponse"
+        "500":
+          description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +60,29 @@ components:
           type: string
       required:
         - status
-
+    StoryRequest:
+      type: object
+      required: [category]
+      properties:
+        category:
+          type: string
+          description: Story category (e.g. AITA, relationship drama, etc.)
+        customTitle:
+          type: ["string", "null"]
+          description: Optional custom post title to use
+    StoryResponse:
+      type: object
+      required: [title, story]
+      properties:
+        title:
+          type: string
+          description: Reddit post title
+        story:
+          type: string
+          description: Full story text for narration
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
