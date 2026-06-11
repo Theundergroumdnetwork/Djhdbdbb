@@ -4,15 +4,6 @@ import { GenerateStoryBody } from "@workspace/api-zod";
 
 const router = Router();
 
-const STORY_CATEGORIES: Record<string, string> = {
-  aita: "Am I The Asshole (AITA)",
-  relationship: "Relationship Drama",
-  revenge: "Petty Revenge",
-  family: "Family Drama",
-  work: "Workplace Drama",
-  roommate: "Roommate Conflict",
-};
-
 const STORY_PROMPTS: Record<string, string> = {
   aita: `Write a compelling Reddit AITA (Am I The Asshole) post. 
 Create a title that starts with "AITA for" followed by something dramatic and specific. 
@@ -55,16 +46,13 @@ router.post("/story/generate", async (req, res) => {
     baseURL: "https://openrouter.ai/api/v1",
     apiKey,
     defaultHeaders: {
-      "HTTP-Referer": "https://blankvex.replit.app",
-      "X-Title": "BlankVex Studio",
+      "HTTP-Referer": "https://replit.com",
+      "X-Title": "Reddit Story Generator",
     },
   });
 
   const categoryKey = category.toLowerCase().replace(/\s+/g, "_");
-  const promptTemplate =
-    STORY_PROMPTS[categoryKey] ||
-    STORY_PROMPTS.aita ||
-    "";
+  const promptTemplate = STORY_PROMPTS[categoryKey] || STORY_PROMPTS.aita || "";
 
   const systemPrompt = `You are a Reddit story writer specializing in viral, emotionally engaging posts. 
 Your stories feel completely authentic — specific names, relatable situations, raw emotions. 
@@ -108,8 +96,7 @@ with specific details. Return JSON with "title" and "story" fields.`
     return res.json({ title: parsed.title, story: parsed.story });
   } catch (err: unknown) {
     req.log.error({ err }, "Story generation failed");
-    const message =
-      err instanceof Error ? err.message : "Story generation failed";
+    const message = err instanceof Error ? err.message : "Story generation failed";
     return res.status(500).json({ error: message });
   }
 });

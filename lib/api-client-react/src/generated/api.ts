@@ -22,8 +22,11 @@ import type {
 import type {
   ErrorResponse,
   HealthStatus,
-  StoryRequest,
-  StoryResponse
+  SpeakInput,
+  SpeakResponse,
+  StoryInput,
+  StoryResponse,
+  Voice
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -128,7 +131,7 @@ export const getGenerateStoryUrl = () => {
  * Uses OpenRouter AI to generate a Reddit-style AITA or drama story
  * @summary Generate a Reddit-style story
  */
-export const generateStory = async (storyRequest: StoryRequest, options?: RequestInit): Promise<StoryResponse> => {
+export const generateStory = async (storyInput: StoryInput, options?: RequestInit): Promise<StoryResponse> => {
 
   return customFetch<StoryResponse>(getGenerateStoryUrl(),
   {
@@ -136,7 +139,7 @@ export const generateStory = async (storyRequest: StoryRequest, options?: Reques
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      storyRequest,)
+      storyInput,)
   }
 );}
 
@@ -144,8 +147,8 @@ export const generateStory = async (storyRequest: StoryRequest, options?: Reques
 
 
 export const getGenerateStoryMutationOptions = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateStory>>, TError,{data: BodyType<StoryRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateStory>>, TError,{data: BodyType<StoryRequest>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateStory>>, TError,{data: BodyType<StoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateStory>>, TError,{data: BodyType<StoryInput>}, TContext> => {
 
 const mutationKey = ['generateStory'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -157,7 +160,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateStory>>, {data: BodyType<StoryRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateStory>>, {data: BodyType<StoryInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  generateStory(data,requestOptions)
@@ -171,20 +174,170 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type GenerateStoryMutationResult = NonNullable<Awaited<ReturnType<typeof generateStory>>>
-    export type GenerateStoryMutationBody = BodyType<StoryRequest>
+    export type GenerateStoryMutationBody = BodyType<StoryInput>
     export type GenerateStoryMutationError = ErrorType<ErrorResponse>
 
     /**
  * @summary Generate a Reddit-style story
  */
 export const useGenerateStory = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateStory>>, TError,{data: BodyType<StoryRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateStory>>, TError,{data: BodyType<StoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateStory>>,
         TError,
-        {data: BodyType<StoryRequest>},
+        {data: BodyType<StoryInput>},
         TContext
       > => {
       return useMutation(getGenerateStoryMutationOptions(options));
+    }
+
+export const getListVoicesUrl = () => {
+
+
+
+
+  return `/api/voices`
+}
+
+/**
+ * Returns all available ElevenLabs voices
+ * @summary List available TTS voices
+ */
+export const listVoices = async ( options?: RequestInit): Promise<Voice[]> => {
+
+  return customFetch<Voice[]>(getListVoicesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVoicesQueryKey = () => {
+    return [
+    `/api/voices`
+    ] as const;
+    }
+
+
+export const getListVoicesQueryOptions = <TData = Awaited<ReturnType<typeof listVoices>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVoicesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVoices>>> = ({ signal }) => listVoices({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVoices>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVoicesQueryResult = NonNullable<Awaited<ReturnType<typeof listVoices>>>
+export type ListVoicesQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List available TTS voices
+ */
+
+export function useListVoices<TData = Awaited<ReturnType<typeof listVoices>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVoicesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSpeakTextUrl = () => {
+
+
+
+
+  return `/api/tts/speak`
+}
+
+/**
+ * Uses ElevenLabs to generate audio and returns base64 audio plus word-level timestamps for caption sync
+ * @summary Convert text to speech with word timestamps
+ */
+export const speakText = async (speakInput: SpeakInput, options?: RequestInit): Promise<SpeakResponse> => {
+
+  return customFetch<SpeakResponse>(getSpeakTextUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      speakInput,)
+  }
+);}
+
+
+
+
+export const getSpeakTextMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof speakText>>, TError,{data: BodyType<SpeakInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof speakText>>, TError,{data: BodyType<SpeakInput>}, TContext> => {
+
+const mutationKey = ['speakText'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof speakText>>, {data: BodyType<SpeakInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  speakText(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SpeakTextMutationResult = NonNullable<Awaited<ReturnType<typeof speakText>>>
+    export type SpeakTextMutationBody = BodyType<SpeakInput>
+    export type SpeakTextMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Convert text to speech with word timestamps
+ */
+export const useSpeakText = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof speakText>>, TError,{data: BodyType<SpeakInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof speakText>>,
+        TError,
+        {data: BodyType<SpeakInput>},
+        TContext
+      > => {
+      return useMutation(getSpeakTextMutationOptions(options));
     }
 

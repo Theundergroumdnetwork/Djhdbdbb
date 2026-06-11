@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface StoryRequest {
+export interface StoryInput {
   /** Story category (e.g. AITA, relationship drama, etc.) */
   category: string;
   /**

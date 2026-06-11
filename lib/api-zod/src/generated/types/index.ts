@@ -8,5 +8,9 @@
 
 export * from './errorResponse';
 export * from './healthStatus';
-export * from './storyRequest';
+export * from './speakInput';
+export * from './speakResponse';
+export * from './storyInput';
 export * from './storyResponse';
+export * from './voice';
+export * from './wordTimestamp';

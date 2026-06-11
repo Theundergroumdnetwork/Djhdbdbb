@@ -32,3 +32,35 @@ export const GenerateStoryResponse = zod.object({
 })
 
 
+/**
+ * Returns all available ElevenLabs voices
+ * @summary List available TTS voices
+ */
+export const ListVoicesResponseItem = zod.object({
+  "id": zod.string().describe('Voice ID'),
+  "name": zod.string().describe('Voice name'),
+  "category": zod.string().describe('Voice category (e.g. premade, cloned)'),
+  "previewUrl": zod.string().nullable().describe('URL to preview audio clip')
+})
+export const ListVoicesResponse = zod.array(ListVoicesResponseItem)
+
+
+/**
+ * Uses ElevenLabs to generate audio and returns base64 audio plus word-level timestamps for caption sync
+ * @summary Convert text to speech with word timestamps
+ */
+export const SpeakTextBody = zod.object({
+  "text": zod.string().describe('Text to convert to speech'),
+  "voiceId": zod.string().describe('ElevenLabs voice ID to use')
+})
+
+export const SpeakTextResponse = zod.object({
+  "audioBase64": zod.string().describe('Base64-encoded MP3 audio'),
+  "words": zod.array(zod.object({
+  "word": zod.string().describe('The word'),
+  "start": zod.number().describe('Start time in seconds'),
+  "end": zod.number().describe('End time in seconds')
+})).describe('Word-level timestamps for caption sync')
+})
+
+

@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -12,6 +11,10 @@ tags:
     description: Health operations
   - name: story
     description: Reddit story generation
+  - name: tts
+    description: Text to speech
+  - name: voices
+    description: Voice management
 paths:
   /healthz:
     get:
@@ -37,7 +40,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/StoryRequest"
+              $ref: "#/components/schemas/StoryInput"
       responses:
         "200":
           description: Generated story
@@ -51,6 +54,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /voices:
+    get:
+      operationId: listVoices
+      tags: [voices]
+      summary: List available TTS voices
+      description: Returns all available ElevenLabs voices
+      responses:
+        "200":
+          description: List of voices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Voice"
+        "500":
+          description: Failed to fetch voices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /tts/speak:
+    post:
+      operationId: speakText
+      tags: [tts]
+      summary: Convert text to speech with word timestamps
+      description: Uses ElevenLabs to generate audio and returns base64 audio plus word-level timestamps for caption sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpeakInput"
+      responses:
+        "200":
+          description: Audio and timestamps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeakResponse"
+        "500":
+          description: TTS failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -60,7 +109,7 @@ components:
           type: string
       required:
         - status
-    StoryRequest:
+    StoryInput:
       type: object
       required: [category]
       properties:
@@ -80,6 +129,57 @@ components:
         story:
           type: string
           description: Full story text for narration
+    Voice:
+      type: object
+      required: [id, name, category, previewUrl]
+      properties:
+        id:
+          type: string
+          description: Voice ID
+        name:
+          type: string
+          description: Voice name
+        category:
+          type: string
+          description: Voice category (e.g. premade, cloned)
+        previewUrl:
+          type: ["string", "null"]
+          description: URL to preview audio clip
+    SpeakInput:
+      type: object
+      required: [text, voiceId]
+      properties:
+        text:
+          type: string
+          description: Text to convert to speech
+        voiceId:
+          type: string
+          description: ElevenLabs voice ID to use
+    WordTimestamp:
+      type: object
+      required: [word, start, end]
+      properties:
+        word:
+          type: string
+          description: The word
+        start:
+          type: number
+          description: Start time in seconds
+        end:
+          type: number
+          description: End time in seconds
+    SpeakResponse:
+      type: object
+      required: [audioBase64, words]
+      properties:
+        audioBase64:
+          type: string
+          description: Base64-encoded MP3 audio
+        words:
+          type: array
+          items:
+            $ref: "#/components/schemas/WordTimestamp"
+          description: Word-level timestamps for caption sync
     ErrorResponse:
       type: object
       required: [error]

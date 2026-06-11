@@ -9,7 +9,7 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface StoryRequest {
+export interface StoryInput {
   /** Story category (e.g. AITA, relationship drama, etc.) */
   category: string;
   /**
@@ -24,6 +24,43 @@ export interface StoryResponse {
   title: string;
   /** Full story text for narration */
   story: string;
+}
+
+export interface Voice {
+  /** Voice ID */
+  id: string;
+  /** Voice name */
+  name: string;
+  /** Voice category (e.g. premade, cloned) */
+  category: string;
+  /**
+     * URL to preview audio clip
+     * @nullable
+     */
+  previewUrl: string | null;
+}
+
+export interface SpeakInput {
+  /** Text to convert to speech */
+  text: string;
+  /** ElevenLabs voice ID to use */
+  voiceId: string;
+}
+
+export interface WordTimestamp {
+  /** The word */
+  word: string;
+  /** Start time in seconds */
+  start: number;
+  /** End time in seconds */
+  end: number;
+}
+
+export interface SpeakResponse {
+  /** Base64-encoded MP3 audio */
+  audioBase64: string;
+  /** Word-level timestamps for caption sync */
+  words: WordTimestamp[];
 }
 
 export interface ErrorResponse {
