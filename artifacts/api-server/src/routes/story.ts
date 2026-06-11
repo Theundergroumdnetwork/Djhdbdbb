@@ -84,9 +84,19 @@ with specific details. Return JSON with "title" and "story" fields.`
 
     let parsed: { title: string; story: string };
     try {
-      parsed = JSON.parse(content);
-    } catch {
-      return res.status(500).json({ error: "Failed to parse AI response" });
+      // Strip markdown code fences if model wraps response
+      const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      parsed = JSON.parse(cleaned);
+    } catch (parseErr) {
+      req.log.error({ content, parseErr }, "Failed to parse AI response as JSON");
+      // Last resort: try to extract title/story with regex
+      const titleMatch = content.match(/"title"\s*:\s*"([^"]+)"/);
+      const storyMatch = content.match(/"story"\s*:\s*"([\s\S]+?)"\s*[},]/);
+      if (titleMatch && storyMatch) {
+        parsed = { title: titleMatch[1], story: storyMatch[1].replace(/\\n/g, "\n") };
+      } else {
+        return res.status(500).json({ error: "Failed to parse AI response — model returned unexpected format" });
+      }
     }
 
     if (!parsed.title || !parsed.story) {
